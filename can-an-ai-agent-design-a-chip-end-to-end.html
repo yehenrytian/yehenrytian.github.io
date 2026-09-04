@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="A 2026 evidence review of full-cycle agentic chip design — what has actually been demonstrated, what the benchmarks really measure, and the five obstacles standing between today's demos and a tape-out.">
+<meta name="color-scheme" content="light dark">
+<meta name="robots" content="index, follow">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Can an AI agent design a chip end to end?">
+<meta property="og:description" content="Where full-cycle agentic chip design actually stands in 2026 — what has been demonstrated, what the numbers say past the benchmarks, and the five obstacles before tape-out.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%235a4cb8'/%3E%3Crect x='10' y='10' width='12' height='12' rx='2' fill='none' stroke='%23fff' stroke-width='2'/%3E%3Cg stroke='%23fff' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='M13 10V6M19 10V6M13 26v-4M19 26v-4M10 13H6M10 19H6M26 13h-4M26 19h-4'/%3E%3C/g%3E%3C/svg%3E">
+<title>Can an AI agent design a chip end to end?</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Inter:wght@400;500;600&display=swap">
+<style>
+/* ─────────────────────────────────────────────────────────────────────────
+   Nocturne, carried over from the source design system and given a light
+   companion. Every colour is a token; the light theme mirrors the tonal
+   ramps (100 = darkest ink → 900 = palest ground) so the report's own
+   inline styles resolve correctly in both themes without being rewritten.
+   ───────────────────────────────────────────────────────────────────── */
+:root {
+  color-scheme: light;
+  --color-bg: #f6f6fb;
+  --color-surface: #ffffff;
+  --color-text: #191b28;
+  --color-accent: #5a4cb8;
+  --color-accent-2: #6f66c4;
+  --color-divider: color-mix(in srgb, #191b28 15%, transparent);
+
+  --color-neutral-100: #14161f;
+  --color-neutral-200: #262936;
+  --color-neutral-300: #3d4152;
+  --color-neutral-400: #585d71;
+  --color-neutral-500: #6f7488;
+  --color-neutral-600: #838899;
+  --color-neutral-700: #b9bdcc;
+  --color-neutral-800: #e4e7f0;
+  --color-neutral-900: #f1f3f8;
+
+  --color-accent-100: #1e1846;
+  --color-accent-200: #322a68;
+  --color-accent-300: #453b8f;
+  --color-accent-400: #5a4cb8;
+  --color-accent-500: #6a5bc8;
+  --color-accent-600: #7c6fd2;
+  --color-accent-700: #a99ee6;
+  --color-accent-800: #cfc8f2;
+  --color-accent-900: #ebe8fa;
+
+  --color-section: #eae8f8;
+  --color-rule: color-mix(in srgb, #191b28 9%, transparent);
+
+  --shadow-sm: 0 0 0 1px #e3e6ef;
+  --shadow-md: 0 0 0 1px #ddd8f2, 0 8px 24px rgba(25, 27, 40, 0.07);
+
+  --font-heading: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --font-heading-weight: 600;
+  --font-body: "Inter", system-ui, -apple-system, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 14px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --color-bg: #161826;
+    --color-surface: #232532;
+    --color-text: #e9e9ed;
+    --color-accent: #9184d9;
+    --color-accent-2: #a7a1db;
+    --color-divider: color-mix(in srgb, #e9e9ed 16%, transparent);
+
+    --color-neutral-100: #f3f5fe;
+    --color-neutral-200: #e4e7f5;
+    --color-neutral-300: #cfd3e5;
+    --color-neutral-400: #b2b6ca;
+    --color-neutral-500: #9397ab;
+    --color-neutral-600: #75798c;
+    --color-neutral-700: #595d6c;
+    --color-neutral-800: #3f424d;
+    --color-neutral-900: #292b31;
+
+    --color-accent-100: #f5f4ff;
+    --color-accent-200: #e7e5fe;
+    --color-accent-300: #d2cefd;
+    --color-accent-400: #b5abfc;
+    --color-accent-500: #968ae0;
+    --color-accent-600: #796cbf;
+    --color-accent-700: #5d5294;
+    --color-accent-800: #423a6a;
+    --color-accent-900: #2b2741;
+
+    --color-section: #262a60;
+    --color-rule: color-mix(in srgb, #e9e9ed 10%, transparent);
+
+    --shadow-sm: 0 0 0 1px #3f424d;
+    --shadow-md: 0 0 0 1px #595d6c, 0 6px 18px rgba(0, 0, 0, 0.55);
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --color-bg: #161826;
+  --color-surface: #232532;
+  --color-text: #e9e9ed;
+  --color-accent: #9184d9;
+  --color-accent-2: #a7a1db;
+  --color-divider: color-mix(in srgb, #e9e9ed 16%, transparent);
+
+  --color-neutral-100: #f3f5fe;
+  --color-neutral-200: #e4e7f5;
+  --color-neutral-300: #cfd3e5;
+  --color-neutral-400: #b2b6ca;
+  --color-neutral-500: #9397ab;
+  --color-neutral-600: #75798c;
+  --color-neutral-700: #595d6c;
+  --color-neutral-800: #3f424d;
+  --color-neutral-900: #292b31;
+
+  --color-accent-100: #f5f4ff;
+  --color-accent-200: #e7e5fe;
+  --color-accent-300: #d2cefd;
+  --color-accent-400: #b5abfc;
+  --color-accent-500: #968ae0;
+  --color-accent-600: #796cbf;
+  --color-accent-700: #5d5294;
+  --color-accent-800: #423a6a;
+  --color-accent-900: #2b2741;
+
+  --color-section: #262a60;
+  --color-rule: color-mix(in srgb, #e9e9ed 10%, transparent);
+
+  --shadow-sm: 0 0 0 1px #3f424d;
+  --shadow-md: 0 0 0 1px #595d6c, 0 6px 18px rgba(0, 0, 0, 0.55);
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.62;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+h1, h2, h3, h4 {
+  font-family: var(--font-heading);
+  font-weight: var(--font-heading-weight);
+  letter-spacing: -0.015em;
+  text-wrap: balance;
+}
+
+a { color: var(--color-accent-300); text-decoration: none; border-bottom: 1px solid color-mix(in srgb, var(--color-accent) 35%, transparent); }
+a:hover { color: var(--color-accent); border-bottom-color: var(--color-accent); }
+:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 3px; border-radius: 2px; }
+::selection { background: color-mix(in srgb, var(--color-accent) 28%, transparent); }
+strong { font-weight: 600; }
+
+/* ── masthead ─────────────────────────────────────────────────────────── */
+.masthead {
+  position: sticky; top: 0; z-index: 20;
+  display: flex; align-items: center; gap: 14px;
+  height: 50px; padding: 0 28px;
+  background: color-mix(in srgb, var(--color-bg) 88%, transparent);
+  -webkit-backdrop-filter: saturate(1.4) blur(14px);
+  backdrop-filter: saturate(1.4) blur(14px);
+  border-bottom: 1px solid var(--color-rule);
+}
+.masthead .mark {
+  font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--color-accent-300);
+  white-space: nowrap;
+}
+.masthead .running {
+  font-family: var(--font-heading); font-size: 13.5px; font-weight: 500;
+  color: var(--color-neutral-400);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.masthead .running::before { content: "/"; margin-right: 10px; color: var(--color-neutral-600); }
+.masthead .stamp {
+  margin-left: auto; font-family: var(--font-mono); font-size: 11px;
+  color: var(--color-neutral-500); white-space: nowrap;
+}
+@media (max-width: 640px) { .masthead .stamp { display: none; } }
+
+#read-progress {
+  position: absolute; left: 0; bottom: -1px; height: 2px; width: 0;
+  background: var(--color-accent);
+}
+
+/* ── shell ────────────────────────────────────────────────────────────── */
+.doc-col { min-width: 0; }
+.shell { max-width: 1240px; margin: 0 auto; padding: 0 28px; }
+@media (min-width: 1120px) {
+  .shell {
+    display: grid;
+    grid-template-columns: 200px minmax(0, 1fr);
+    gap: 72px;
+    align-items: start;
+  }
+}
+
+/* ── contents rail ────────────────────────────────────────────────────── */
+.toc { padding: 40px 0 0; }
+.toc h2 {
+  font-family: var(--font-mono); font-size: 11px; font-weight: 400;
+  letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--color-neutral-500); margin: 0 0 14px;
+}
+.toc ol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.toc a {
+  display: grid; grid-template-columns: 26px 1fr; align-items: baseline;
+  gap: 6px; padding: 5px 0;
+  font-size: 14px; line-height: 1.3;
+  color: var(--color-neutral-400); border-bottom: 0;
+}
+.toc a .n { font-family: var(--font-mono); font-size: 11px; color: var(--color-neutral-600); }
+.toc a:hover { color: var(--color-text); }
+.toc a[aria-current="true"] { color: var(--color-accent-300); }
+.toc a[aria-current="true"] .n { color: var(--color-accent); }
+@media (min-width: 1120px) {
+  .toc { position: sticky; top: 50px; padding-top: 64px; }
+  .toc ol { border-left: 1px solid var(--color-rule); }
+  .toc a { padding-left: 14px; margin-left: -1px; border-left: 2px solid transparent; }
+  .toc a[aria-current="true"] { border-left-color: var(--color-accent); }
+}
+@media (max-width: 1119px) {
+  .toc {
+    padding: 28px 0 0; margin-bottom: -12px;
+  }
+  .toc ol { flex-direction: row; flex-wrap: wrap; gap: 4px 8px; }
+  .toc a {
+    grid-template-columns: auto auto; gap: 6px; padding: 5px 11px;
+    border: 1px solid var(--color-rule); border-radius: 999px; font-size: 13px;
+  }
+}
+
+/* ── document ─────────────────────────────────────────────────────────── */
+.doc {
+  padding: 8px 0 40px;
+  font-size: 16px; line-height: 1.62;
+  text-wrap: pretty;
+}
+.doc section { scroll-margin-top: 66px; }
+.doc h1 { font-weight: 600; }
+
+/* Nocturne components used inside the report */
+.tag {
+  display: inline-flex; align-items: center;
+  font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.06em;
+  text-transform: uppercase; padding: 3px 10px; border-radius: 6px;
+}
+.tag-accent { background: var(--color-accent-800); color: var(--color-accent-100); }
+
+.scroll-x { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.table { width: 100%; border-collapse: collapse; font-size: 14.5px; min-width: 680px; }
+.table th {
+  text-align: left; font-family: var(--font-mono); font-weight: 400;
+  font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--color-neutral-400);
+  padding: 10px 16px 10px 0; border-bottom: 1px solid var(--color-divider);
+  vertical-align: bottom;
+}
+.table td {
+  padding: 14px 16px 14px 0; vertical-align: top;
+  border-bottom: 1px solid var(--color-rule);
+}
+.table th:last-child, .table td:last-child { padding-right: 0; }
+.table tbody tr:last-child td { border-bottom: 0; }
+
+.doc ul, .doc ol { margin: 0; }
+.doc li::marker { color: var(--color-neutral-500); }
+
+/* ── colophon ─────────────────────────────────────────────────────────── */
+.colophon {
+  border-top: 1px solid var(--color-rule);
+  padding: 26px 0 72px;
+  display: flex; flex-wrap: wrap; gap: 8px 28px; align-items: baseline;
+  font-family: var(--font-mono); font-size: 11.5px; line-height: 1.7;
+  color: var(--color-neutral-500);
+}
+.colophon .sep { color: var(--color-neutral-700); }
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}
+html { scroll-behavior: smooth; }
+</style>
+<style>
+/* baseline reset — the standalone file supplies what the artifact host normally adds */
+img, video { display: block; max-width: 100%; height: auto; }
+[hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<header class="masthead">
+  <span class="mark">Agentic EDA</span>
+  <span class="running">Can an AI agent design a chip end to end?</span>
+  <span class="stamp">Compiled 4 Sep 2026</span>
+  <div id="read-progress"></div>
+</header>
+
+<div class="shell">
+  <nav class="toc" aria-label="Contents">
+    <h2>Contents</h2>
+    <ol>
+      <li><a href="#bottom-line"><span class="n">—</span><span>The bottom line</span></a></li>
+      <li><a href="#framing"><span class="n">01</span><span>Framing</span></a></li>
+      <li><a href="#progress"><span class="n">02</span><span>Progress</span></a></li>
+      <li><a href="#commercial"><span class="n">03</span><span>The commercial picture</span></a></li>
+      <li><a href="#challenges"><span class="n">04</span><span>Challenges</span></a></li>
+      <li><a href="#outlook"><span class="n">05</span><span>Outlook</span></a></li>
+      <li><a href="#verdict"><span class="n">—</span><span>Verdict</span></a></li>
+      <li><a href="#sources"><span class="n">—</span><span>Sources</span></a></li>
+    </ol>
+  </nav>
+
+<div class="doc-col">
+<main class="doc">
+
+  <header style="display: flex; flex-direction: column; gap: 20px; padding-bottom: 28px; border-bottom: 1px solid var(--color-divider);">
+    <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+      <span class="tag tag-accent">Research report</span>
+      <span style="font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-neutral-400);font-family:var(--font-mono);">Compiled 4 September 2026 · sources dated to July 2026</span>
+    </div>
+    <h1 style="font-family: var(--font-heading); font-weight: var(--font-heading-weight); font-size: 58px; line-height: 1.04; letter-spacing: -0.02em; margin: 0; max-width: 20ch;">Can an AI agent design a chip end to end?</h1>
+    <p style="margin: 0; max-width: 62ch; font-size: 20px; line-height: 1.5; color: var(--color-neutral-200);">Where full-cycle agentic chip design actually stands in 2026 — what has been demonstrated, what the numbers say when you look past the benchmarks, and the five obstacles between today's demos and silicon you would tape out.</p>
+  </header>
+
+  <section id="bottom-line" style="display: grid; grid-template-columns: 1fr 1fr; gap: 32px 48px; padding: 40px 0; border-bottom: 1px solid var(--color-divider);">
+    <div style="grid-column: 1 / -1;">
+      <h2 style="font-family: var(--font-heading); font-weight: var(--font-heading-weight); font-size: 13px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--color-accent-300); margin: 0 0 4px;font-family:var(--font-mono);">The bottom line</h2>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 12px;">
+      <div style="display: flex; gap: 14px;">
+        <span style="font-size: 13px; color: var(--color-accent); font-family:var(--font-mono); padding-top: 5px;">01</span>
+        <p style="margin: 0;"><strong style="font-weight: 500;">The end-to-end demo exists — and it is small.</strong> In February 2026 an autonomous agent went from a 219-word requirements document to tape-out-ready GDSII for a 5-stage RISC-V core in 12 hours, unattended. It clocks 1.48 GHz on an academic 7nm PDK and scores like a 2011 budget laptop CPU.</p>
+      </div>
+      <div style="display: flex; gap: 14px;">
+        <span style="font-size: 13px; color: var(--color-accent); font-family:var(--font-mono); padding-top: 5px;">02</span>
+        <p style="margin: 0;"><strong style="font-weight: 500;">Reliability comes from the harness, not the model.</strong> On a commercial 55nm RTL-to-GDS benchmark, the same frontier models scored 11 or 97 out of 100 depending only on the execution architecture wrapped around them.</p>
+      </div>
+      <div style="display: flex; gap: 14px;">
+        <span style="font-size: 13px; color: var(--color-accent); font-family:var(--font-mono); padding-top: 5px;">03</span>
+        <p style="margin: 0;"><strong style="font-weight: 500;">The benchmarks that look solved are the easy ones.</strong> Agents pass &gt;95% on module-level Verilog suites but ~31% on hierarchical, industry-shaped designs.</p>
+      </div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 12px;">
+      <div style="display: flex; gap: 14px;">
+        <span style="font-size: 13px; color: var(--color-accent); font-family:var(--font-mono); padding-top: 5px;">04</span>
+        <p style="margin: 0;"><strong style="font-weight: 500;">Money is going into verification first, not full autonomy.</strong> Every one of the three big EDA vendors shipped a long-running verification agent in 2026 with 40–50× cycle-time claims. Verification, not layout, is where the labour is.</p>
+      </div>
+      <div style="display: flex; gap: 14px;">
+        <span style="font-size: 13px; color: var(--color-accent); font-family:var(--font-mono); padding-top: 5px;">05</span>
+        <p style="margin: 0;"><strong style="font-weight: 500;">The gating fact: no human-free tape-out of an industrial chip has been demonstrated.</strong> That is the claim to watch, and as of the most recent survey of the field it had not been made by anyone.</p>
+      </div>
+      <div style="border-left: 2px solid var(--color-accent-700); padding: 4px 0 4px 16px; margin-top: 4px;">
+        <p style="margin: 0; color: var(--color-neutral-300); font-size: 15px;">Read as: the frontier has moved from "can a model write Verilog" to "can a system hold a design together across a hundred tool invocations." The second question is an infrastructure question.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="framing" style="padding: 48px 0 8px;">
+    <p style="font-family: var(--font-heading); font-size: 13px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--color-neutral-400); margin: 0 0 8px;font-family:var(--font-mono);">01 — Framing</p>
+    <h2 style="font-family: var(--font-heading); font-weight: var(--font-heading-weight); font-size: 34px; line-height: 1.16; margin: 0 0 20px; max-width: 30ch;">"Full cycle" is six jobs, and agents are unevenly good at each</h2>
+    <p style="max-width: 68ch; margin: 0 0 28px;">A chip goes from intent to silicon through architecture definition, RTL implementation, functional verification, synthesis, physical implementation (floorplan, placement, clock tree, routing), and signoff plus ECO repair. Each stage has its own tools, its own database, and its own failure modes; a late failure invalidates hours of upstream work. Two independent 2026 reviews converge on framing autonomy as a ladder rather than a switch — one from academia, one from a tool vendor.</p>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1px; background: var(--color-divider); border: 1px solid var(--color-divider); border-radius: var(--radius-md); overflow: hidden;">
+      <div style="background: var(--color-surface); padding: 20px 22px; display: flex; flex-direction: column; gap: 8px;">
+        <span style="font-family: var(--font-heading); font-size: 12px; letter-spacing: 0.1em; color: var(--color-neutral-400);font-family:var(--font-mono);">L0 – L1</span>
+        <strong style="font-weight: 500; font-size: 17px;">Tool-assisted human</strong>
+        <p style="margin: 0; font-size: 14px; color: var(--color-neutral-300);">Human defines the flow; algorithmic solvers handle sub-problems. Where the industry has lived since the 1980s.</p>
+      </div>
+      <div style="background: var(--color-surface); padding: 20px 22px; display: flex; flex-direction: column; gap: 8px;">
+        <span style="font-family: var(--font-heading); font-size: 12px; letter-spacing: 0.1em; color: var(--color-neutral-400);font-family:var(--font-mono);">L2</span>
+        <strong style="font-weight: 500; font-size: 17px;">Copilots that predict</strong>
+        <p style="margin: 0; font-size: 14px; color: var(--color-neutral-300);">2018–2023. ML predicts congestion or tunes parameters. Advises; does not execute.</p>
+      </div>
+      <div style="background: var(--color-surface); padding: 20px 22px; display: flex; flex-direction: column; gap: 8px; box-shadow: inset 0 0 0 1px var(--color-accent-800);">
+        <span style="font-family: var(--font-heading); font-size: 12px; letter-spacing: 0.1em; color: var(--color-accent-300);font-family:var(--font-mono);">L3 — today's frontier</span>
+        <strong style="font-weight: 500; font-size: 17px;">Agentic orchestration</strong>
+        <p style="margin: 0; font-size: 14px; color: var(--color-neutral-300);">The agent decomposes tasks, writes RTL and Tcl, reads logs, closes loops. It has hands and eyes. A human monitors.</p>
+      </div>
+      <div style="background: var(--color-surface); padding: 20px 22px; display: flex; flex-direction: column; gap: 8px;">
+        <span style="font-family: var(--font-heading); font-size: 12px; letter-spacing: 0.1em; color: var(--color-neutral-400);font-family:var(--font-mono);">L4 – L5</span>
+        <strong style="font-weight: 500; font-size: 17px;">Self-driving flow</strong>
+        <p style="margin: 0; font-size: 14px; color: var(--color-neutral-300);">Human defines intent only; the system navigates RTL-to-GDSII for PPA with no intervention. Claimed in product announcements; not yet evidenced by an industrial tape-out.</p>
+      </div>
+    </div>
+    <p style="margin: 14px 0 0; font-size: 13px; color: var(--color-neutral-400);">Ladder after Zang et al., <a href="https://arxiv.org/abs/2512.23189">“The Dawn of Agentic EDA”</a> (survey, v2 Feb 2026), which models EDA autonomy on the SAE driving levels. Cadence uses a parallel five-level scheme in its <a href="https://www.cadence.com/en_US/home/ai/ai-for-design.html">product framing</a>; the labels are not interchangeable, and vendor levels are self-assigned.</p>
+  </section>
+
+  <section id="progress" style="padding: 56px 0 8px;">
+    <p style="font-family: var(--font-heading); font-size: 13px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--color-neutral-400); margin: 0 0 8px;font-family:var(--font-mono);">02 — Progress</p>
+    <h2 style="font-family: var(--font-heading); font-weight: var(--font-heading-weight); font-size: 34px; line-height: 1.16; margin: 0 0 20px; max-width: 32ch;">The strongest single result: spec to GDSII in twelve hours</h2>
+    <div style="display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 44px; align-items: start;">
+      <div>
+        <p style="margin: 0 0 16px;">The Verkor team's <a href="https://arxiv.org/abs/2603.08716">Design Conductor</a> report (arXiv, 6 Feb 2026) is the clearest evidence that the full loop can close without a human in it. Given a 219-word requirements document, the RISC-V ISA manuals, the Spike ISA simulator and the OpenROAD flow, the agent wrote its own design proposal, reviewed it, implemented per-module testbenches, built a Spike-differential integration test, debugged from VCD waveforms, and drove multiple micro-architecture variants all the way to GDSII on the ASAP7 predictive PDK.</p>
+        <p style="margin: 0 0 16px;">Two details matter more than the headline. First, the agent did not guess between variants: it implemented each one down to layout and compared real timing, concluding that a 1-cycle branch penalty design could still make the clock target — rediscovering the critical-path trade-off of the classic MIPS 5-stage pipeline. Second, it fed post-place-and-route timing back into RTL changes, which is exactly the cross-stage loop that makes chip design hard to automate stage by stage.</p>
+        <p style="margin: 0 0 16px; color: var(--color-neutral-200);">The authors are candid about the limits, and their caveats are the most useful part of the paper. They report that base models reason about Verilog “as if it were sequential code”, initially wrote forwarding logic with over-long critical paths, and once tried deepening the pipeline before looking for a simpler timing explanation — burning tokens. They also found the input spec had to be “extremely deliberate, tight, and verifiable”: without an explicit CPI ≤ 1.5 requirement, the agent produced markedly worse designs. Their conclusion: <em>“it will remain critical to have experienced human architects guide systems such as DC.”</em></p>
+        <p style="margin: 0; font-size: 15px; color: var(--color-neutral-300);">What this result is not: a tape-out, a foundry-qualified node, an SoC, or a verified-to-signoff design. ASAP7 is a predictive academic PDK; a CoreMark of 3261 is roughly a mid-2011 Intel Celeron SU2300. The claim that the approach scales to million-line codebases and a 13-stage out-of-order core is stated in the report but not accompanied by published metrics.</p>
+      </div>
+      <aside style="background: var(--color-surface); border: 1px solid var(--color-divider); border-radius: var(--radius-md); padding: 24px; box-shadow: var(--shadow-sm);">
+        <p style="font-family: var(--font-heading); font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--color-accent-300); margin: 0 0 16px;font-family:var(--font-mono);">VerCore, as reported</p>
+        <dl style="margin: 0; display: flex; flex-direction: column; gap: 14px;">
+          <div style="display: flex; flex-direction: column; gap: 2px;">
+            <dt style="font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-neutral-400);font-family:var(--font-mono);">Autonomous run time</dt>
+            <dd style="margin: 0; font-size: 26px; font-family:var(--font-mono);font-variant-numeric:tabular-nums;letter-spacing:-0.01em;">12 hours</dd>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 2px;">
+            <dt style="font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-neutral-400);font-family:var(--font-mono);">Human input</dt>
+            <dd style="margin: 0; font-size: 26px; font-family:var(--font-mono);font-variant-numeric:tabular-nums;letter-spacing:-0.01em;">219 words</dd>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 2px;">
+            <dt style="font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-neutral-400);font-family:var(--font-mono);">Clock (ASAP7)</dt>
+            <dd style="margin: 0; font-size: 26px; font-family:var(--font-mono);font-variant-numeric:tabular-nums;letter-spacing:-0.01em;">1.48 GHz</dd>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 2px;">
+            <dt style="font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-neutral-400);font-family:var(--font-mono);">CoreMark</dt>
+            <dd style="margin: 0; font-size: 26px; font-family:var(--font-mono);font-variant-numeric:tabular-nums;letter-spacing:-0.01em;">3,261</dd>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 2px;">
+            <dt style="font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-neutral-400);font-family:var(--font-mono);">Core area, ex-cache</dt>
+            <dd style="margin: 0; font-size: 26px; font-family:var(--font-mono);font-variant-numeric:tabular-nums;letter-spacing:-0.01em;">2,809 µm²</dd>
+          </div>
+        </dl>
+        <p style="margin: 18px 0 0; font-size: 13px; color: var(--color-neutral-400); border-top: 1px solid var(--color-divider); padding-top: 14px;">Self-reported by the developing team; not independently replicated at time of writing. RV32I + Zmmul, 5-stage in-order.</p>
+      </aside>
+    </div>
+  </section>
+
+  <section style="padding: 56px 0 8px;">
+    <h2 style="font-family: var(--font-heading); font-weight: var(--font-heading-weight); font-size: 34px; line-height: 1.16; margin: 0 0 20px; max-width: 34ch;">Independent benchmarking says the harness matters more than the model</h2>
+    <p style="max-width: 68ch; margin: 0 0 24px;">A Zhejiang University / ChipFlux team put agents through a <a href="https://arxiv.org/abs/2607.17528">PicoRV32 RTL-to-GDS flow on commercial 55nm tools</a> (arXiv, 23 Jul 2026) at a loose 350 MHz and a tight 700 MHz target, scoring synthesis, physical implementation and physical-aware ECO as gated stages. Three architectures — a general coding agent, the same agent plus published EDA skills, and a stateful execution layer (FluxEDA) that exposes tools through validated APIs and persistent sessions — were each paired with four frontier models.</p>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; margin-bottom: 28px;">
+      <div style="border: 1px solid var(--color-divider); border-radius: var(--radius-md); padding: 20px 22px; background: var(--color-surface);">
+        <p style="margin: 0 0 12px; font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-neutral-400);font-family:var(--font-mono);">Runs completing ECO (of 8)</p>
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+          <div style="display: flex; flex-direction: column; gap: 5px;">
+            <span style="font-size: 14px;">General coding agent — 3/8</span>
+            <div style="height: 8px; background: var(--color-neutral-800); border-radius: 999px; overflow: hidden;"><div style="width: 37.5%; height: 100%; background: var(--color-neutral-500);"></div></div>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 5px;">
+            <span style="font-size: 14px;">+ EDA skills — 2/8</span>
+            <div style="height: 8px; background: var(--color-neutral-800); border-radius: 999px; overflow: hidden;"><div style="width: 25%; height: 100%; background: var(--color-neutral-500);"></div></div>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 5px;">
+            <span style="font-size: 14px; color: var(--color-accent-200);">Stateful execution layer — 8/8</span>
+            <div style="height: 8px; background: var(--color-neutral-800); border-radius: 999px; overflow: hidden;"><div style="width: 100%; height: 100%; background: var(--color-accent);"></div></div>
+          </div>
+        </div>
+        <p style="margin: 14px 0 0; font-size: 13px; color: var(--color-neutral-400);">All three completed synthesis 8/8. Every failure was downstream.</p>
+      </div>
+      <div style="border: 1px solid var(--color-divider); border-radius: var(--radius-md); padding: 20px 22px; background: var(--color-surface);">
+        <p style="margin: 0 0 12px; font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-neutral-400);font-family:var(--font-mono);">Dominant physical-design failure</p>
+        <p style="margin: 0; font-family: var(--font-heading); font-size: 44px; line-height: 1;font-family:var(--font-mono);font-variant-numeric:tabular-nums;letter-spacing:-0.01em;">31.7%</p>
+        <p style="margin: 8px 0 0; font-size: 14px; color: var(--color-neutral-300);">of observed errors were Tcl command incompatibility — commands syntactically fine but invalid for that tool version, execution mode or MMMC state. The stateful harness recorded 0.0% in this category.</p>
+      </div>
+      <div style="border: 1px solid var(--color-divider); border-radius: var(--radius-md); padding: 20px 22px; background: var(--color-surface);">
+        <p style="margin: 0 0 12px; font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-neutral-400);font-family:var(--font-mono);">Cost efficiency spread</p>
+        <p style="margin: 0; font-family: var(--font-heading); font-size: 44px; line-height: 1;font-family:var(--font-mono);font-variant-numeric:tabular-nums;letter-spacing:-0.01em;">141×</p>
+        <p style="margin: 8px 0 0; font-size: 14px; color: var(--color-neutral-300);">difference in normalised Token ROI between two runs that reached the <em>same</em> verified milestone. A cheap, fast run that dies before ECO looks efficient and is worthless.</p>
+      </div>
+    </div>
+
+    <div style="border-left: 2px solid var(--color-accent); padding: 8px 0 8px 22px; margin: 0 0 24px; max-width: 72ch;">
+      <p style="margin: 0; font-family: var(--font-heading); font-size: 22px; line-height: 1.34; color: var(--color-neutral-100);">Handing an agent domain knowledge is not the same as making it reliable: adding EDA skills lifted one model's score from 13.3 to 96.0 and dropped another's from 87.1 to 11.7 on the identical task.</p>
+      <p style="margin: 10px 0 0; font-size: 13px; color: var(--color-neutral-400);">Deng et al., 2026, 350 MHz target. The authors conclude that agent capability is “a system-level property rather than a property of the foundation model alone.”</p>
+    </div>
+    <p style="max-width: 68ch; margin: 0;">The practical reading: an agent treats an EDA shell as an open programming surface, while the legal action space is narrowed by tool version, loaded design, flow stage and project convention. Structured wrappers delete a whole class of plausible-but-invalid actions before the model's reasoning is even tested. This is why the survey literature and the vendors independently arrive at the same architecture — a model, reusable domain knowledge, validated tool interfaces, and an execution layer that owns state and side effects.</p>
+  </section>
+
+  <section style="padding: 56px 0 8px;">
+    <h2 style="font-family: var(--font-heading); font-weight: var(--font-heading-weight); font-size: 34px; line-height: 1.16; margin: 0 0 20px; max-width: 32ch;">The benchmark mirage</h2>
+    <p style="max-width: 68ch; margin: 0 0 28px;">Most reported progress in "AI writes RTL" is measured on suites of self-contained modules of 10–76 lines that never instantiate a sub-module. Those are saturated: leading multi-agent generators report over 95% accuracy. <a href="https://arxiv.org/abs/2601.21448">ChipBench</a> (arXiv, Jan–Feb 2026) rebuilt the test around 44 realistic modules with hierarchical structure, 89 systematic debugging cases and 132 reference-model samples. The gap is the story.</p>
+
+    <div style="display: flex; flex-direction: column; gap: 18px; max-width: 780px;">
+      <div style="display: grid; grid-template-columns: 250px 1fr 68px; gap: 16px; align-items: center;">
+        <span style="font-size: 15px;">Saturated module-level suites</span>
+        <div style="height: 26px; background: var(--color-neutral-800); border-radius: var(--radius-sm); overflow: hidden;"><div style="width: 95%; height: 100%; background: var(--color-neutral-600);"></div></div>
+        <span style="font-family: var(--font-heading); font-size: 18px; text-align: right;font-family:var(--font-mono);font-variant-numeric:tabular-nums;letter-spacing:-0.01em;">&gt;95%</span>
+      </div>
+      <div style="display: grid; grid-template-columns: 250px 1fr 68px; gap: 16px; align-items: center;">
+        <span style="font-size: 15px;">ChipBench — Verilog generation</span>
+        <div style="height: 26px; background: var(--color-neutral-800); border-radius: var(--radius-sm); overflow: hidden;"><div style="width: 30.7%; height: 100%; background: var(--color-accent);"></div></div>
+        <span style="font-family: var(--font-heading); font-size: 18px; text-align: right;font-family:var(--font-mono);font-variant-numeric:tabular-nums;letter-spacing:-0.01em;">30.7%</span>
+      </div>
+      <div style="display: grid; grid-template-columns: 250px 1fr 68px; gap: 16px; align-items: center;">
+        <span style="font-size: 15px;">ChipBench — Python reference model</span>
+        <div style="height: 26px; background: var(--color-neutral-800); border-radius: var(--radius-sm); overflow: hidden;"><div style="width: 13.3%; height: 100%; background: var(--color-accent-600);"></div></div>
+        <span style="font-family: var(--font-heading); font-size: 18px; text-align: right;font-family:var(--font-mono);font-variant-numeric:tabular-nums;letter-spacing:-0.01em;">13.3%</span>
+      </div>
+      <p style="margin: 4px 0 0; font-size: 13px; color: var(--color-neutral-400);">Same frontier model class (Claude-4.5-opus as reported by the ChipBench authors), radically different difficulty. A separate 2026 benchmark built from OpenCores IP (targets exceeding 1,000 lines of Verilog) reports the same pattern: hierarchical and cross-module designs remain the hard case.</p>
+    </div>
+
+    <p style="max-width: 68ch; margin: 28px 0 0;">The survey authors call this the <strong style="font-weight: 500;">unit-test fallacy</strong> — high pass rates on toy benchmarks correlate poorly with success in real flows, "akin to judging an aircraft engineer by their ability to fold paper planes." Any productivity claim quoted without saying which benchmark it came from should be treated as unmeasured.</p>
+  </section>
+
+  <section id="commercial" style="padding: 56px 0 8px;">
+    <p style="font-family: var(--font-heading); font-size: 13px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--color-neutral-400); margin: 0 0 8px;font-family:var(--font-mono);">03 — The commercial picture</p>
+    <h2 style="font-family: var(--font-heading); font-weight: var(--font-heading-weight); font-size: 34px; line-height: 1.16; margin: 0 0 20px; max-width: 34ch;">All three EDA vendors shipped agents in 2026 — and all three aimed them at verification</h2>
+    <p style="max-width: 68ch; margin: 0 0 28px;">2026 was the year agentic EDA became a product category. The pattern across announcements is consistent and instructive: the autonomy is being deployed where the labour is (design verification consumes over 60% of the design cycle and over half of total spend), it is anchored to the vendors' own deterministic engines, and it runs inside sandboxed runtimes because the input is a customer's most valuable IP.</p>
+
+    <div class="scroll-x">
+      <table class="table" style="width: 100%; border-collapse: collapse; font-size: 14.5px;">
+        <thead>
+          <tr>
+            <th style="text-align: left;">Who</th>
+            <th style="text-align: left;">What was announced</th>
+            <th style="text-align: left;">Claimed effect</th>
+            <th style="text-align: left;">Status &amp; caveat</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong style="font-weight: 500;">Synopsys</strong><br><span style="color: var(--color-neutral-400);">DAC, 26 Jul 2026</span></td>
+            <td>Fully autonomous long-running DV orchestrator agent (AgentEngineer + NVIDIA Nemotron 3 Ultra, OpenShell runtime), from test-plan generation through coverage closure and debug</td>
+            <td>Up to <strong style="font-weight: 500;">50× faster</strong> time-to-validated RTL, +20% coverage; earlier L4 design-and-verification workflow reported up to 5× productivity in early trials</td>
+            <td>Vendor-reported, single footnoted benchmark; general availability signalled for H2 2026. Independent analysts flag named customers and audited baselines as still outstanding.</td>
+          </tr>
+          <tr>
+            <td><strong style="font-weight: 500;">Cadence</strong><br><span style="color: var(--color-neutral-400);">Computex, Jun 2026</span></td>
+            <td>ChipStack AI Super Agent declared "Level 5" — spec understanding, RTL generation, verification planning, formal analysis, simulation, debug, convergence; plus ViraStack (analog), InnoStack (implementation), AgentStack (orchestration)</td>
+            <td><strong style="font-weight: 500;">40×</strong> faster RTL validation; a five-week verification loop reduced to under a day</td>
+            <td>Early access in H2 2026. Note the framing: engineers "remain in a supervisory role" — a self-assigned L5 that still assumes human review.</td>
+          </tr>
+          <tr>
+            <td><strong style="font-weight: 500;">Siemens EDA</strong></td>
+            <td>Self-verifying agents added to the Fuse EDA AI Agent system, multi-tool automation from design into physical implementation</td>
+            <td>Positioned as full-flow autonomy over time</td>
+            <td>Narrowest published scope of the three; characterisation-first.</td>
+          </tr>
+          <tr>
+            <td><strong style="font-weight: 500;">ChipAgents</strong><br><span style="color: var(--color-neutral-400);">DAC 2026</span></td>
+            <td>Multi-agent platform for RTL analysis, verification, debug and timing closure across existing flows; "Renoir" on-prem domain model for IP-restricted teams</td>
+            <td>Over <strong style="font-weight: 500;">3× higher pass@1</strong> than generic AI agents on commercial IP (bus fabrics, RISC-V cores, PCIe, DDR)</td>
+            <td>Vendor's own benchmark suite; the model is described by its makers as "an audition" trained on a constrained budget.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="margin: 14px 0 0; font-size: 13px; color: var(--color-neutral-400);">Sources: <a href="https://news.synopsys.com/2026-07-26-Synopsys-Showcases-Comprehensive-Autonomous-Engineering-Workflows-from-Silicon-to-Systems,-Developed-with-NVIDIA-Technology">Synopsys press release</a> and <a href="https://futurumgroup.com/insights/synopsys-cadence-and-siemens-take-agentic-chip-design-autonomous-at-dac/">Futurum's DAC analysis</a>; <a href="https://www.engineering.com/cadence-extends-chip-design-agent-to-level-5-autonomy/">Cadence via Engineering.com</a> and <a href="https://www.embedded.com/what-level-5-autonomy-could-mean-for-chip-design-engineers">Embedded.com's interview</a>; <a href="https://chipagents.ai/blogs/chipagents-dac-2026">ChipAgents</a> and <a href="https://semiengineering.com/introducing-an-agentic-llm-for-chip-design/">its Renoir note</a>. Every number in this table originates with the party selling the product.</p>
+  </section>
+
+  <section id="challenges" style="padding: 56px 0 8px;">
+    <p style="font-family: var(--font-heading); font-size: 13px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--color-neutral-400); margin: 0 0 8px;font-family:var(--font-mono);">04 — Challenges</p>
+    <h2 style="font-family: var(--font-heading); font-weight: var(--font-heading-weight); font-size: 34px; line-height: 1.16; margin: 0 0 28px; max-width: 30ch;">Five obstacles between the demo and the tape-out</h2>
+
+    <div style="display: flex; flex-direction: column; gap: 1px; background: var(--color-divider); border: 1px solid var(--color-divider); border-radius: var(--radius-md); overflow: hidden;">
+      <article style="background: var(--color-surface); padding: 28px 30px; display: grid; grid-template-columns: 54px 1fr; gap: 24px;">
+        <span style="font-family: var(--font-heading); font-size: 30px; color: var(--color-accent-700);">01</span>
+        <div>
+          <h3 style="font-family: var(--font-heading); font-weight: var(--font-heading-weight); font-size: 22px; margin: 0 0 8px;">The sim-to-silicon gap</h3>
+          <p style="margin: 0 0 10px; max-width: 74ch;">The survey of the field is blunt: while reinforcement-learning placement systems such as AlphaChip have reached industrial tape-out, <strong style="font-weight: 500;">no LLM-driven autonomous agent has demonstrated a complete, human-free tape-out of an industrial chip.</strong> Academic agents optimise proxy metrics or use open PDKs like Sky130 that do not reproduce advanced-node physics — multi-patterning, electromigration, the effects that dominate at N3.</p>
+          <p style="margin: 0; font-size: 14.5px; color: var(--color-neutral-300);"><span style="color: var(--color-accent-300);">The counter-argument worth weighing:</span> the survey's own authors note that methodological transferability may still hold — the logic of fixing a hold violation is invariant across nodes even if buffer strengths are not. Parameter generalisation is the weak link, not reasoning.</p>
+        </div>
+      </article>
+      <article style="background: var(--color-surface); padding: 28px 30px; display: grid; grid-template-columns: 54px 1fr; gap: 24px;">
+        <span style="font-family: var(--font-heading); font-size: 30px; color: var(--color-accent-700);">02</span>
+        <div>
+          <h3 style="font-family: var(--font-heading); font-weight: var(--font-heading-weight); font-size: 22px; margin: 0 0 8px;">Zero-tolerance correctness and the trust deficit</h3>
+          <p style="margin: 0 0 10px; max-width: 74ch;">A single tape-out costs tens of millions of dollars, so a bug found in production is not fixable — which is why verification runs to over half of a project's spend. Probabilistic generation collides with that directly: a model can emit syntactically perfect Verilog that is functionally useless, or connect a clock to a reset pin. The ICCAD 2025 panel paper <a href="https://arxiv.org/abs/2509.04905">“Revolution or Hype?”</a> — with authors from IBM, Synopsys, CUHK, Bremen, TU Darmstadt and Southeast University — concludes that AI's power to automate is undeniable but "reliability and trust concerns hinder adoption", and that the path from hype to revolution runs through formal verification.</p>
+          <p style="margin: 0; font-size: 14.5px; color: var(--color-neutral-300);"><span style="color: var(--color-accent-300);">What would fix it:</span> proof-carrying design — agents that emit not just RTL but the formal properties (SVA) proving it meets spec, shifting trust from the model to a mechanically checkable artifact.</p>
+        </div>
+      </article>
+      <article style="background: var(--color-surface); padding: 28px 30px; display: grid; grid-template-columns: 54px 1fr; gap: 24px;">
+        <span style="font-family: var(--font-heading); font-size: 30px; color: var(--color-accent-700);">03</span>
+        <div>
+          <h3 style="font-family: var(--font-heading); font-weight: var(--font-heading-weight); font-size: 22px; margin: 0 0 8px;">Fragmented tool interfaces and lost design state</h3>
+          <p style="margin: 0 0 10px; max-width: 74ch;">Industrial flows are Tcl shells, Python, Makefiles, vendor commands and hand-maintained glue. The operational state needed to interpret any command — which design is loaded, whether clocks are propagated, which parasitics are active — is implicit. Lose it and a continuous engineering process degenerates into disconnected one-shot scripts. This is measurably the top failure category today (31.7% of physical-design errors), and it is an interface problem, not an intelligence problem.</p>
+          <p style="margin: 0; font-size: 14.5px; color: var(--color-neutral-300);"><span style="color: var(--color-accent-300);">The proposed remedy:</span> an open agentic-EDA protocol analogous to the Language Server Protocol in software, exposing timing graphs and congestion maps as structured APIs instead of raw log text. Nothing like it is standardised, and each vendor's sandboxed agent stack is an argument against one emerging soon.</p>
+        </div>
+      </article>
+      <article style="background: var(--color-surface); padding: 28px 30px; display: grid; grid-template-columns: 54px 1fr; gap: 24px;">
+        <span style="font-family: var(--font-heading); font-size: 30px; color: var(--color-accent-700);">04</span>
+        <div>
+          <h3 style="font-family: var(--font-heading); font-weight: var(--font-heading-weight); font-size: 22px; margin: 0 0 8px;">Data scarcity, and its awkward consequences</h3>
+          <p style="margin: 0 0 10px; max-width: 74ch;">The high-value corpus — advanced-node tape-out logs, production RTL, tool scripts — is siloed inside a handful of companies and is nothing like the open web. Hence the two visible strategies: synthetic data generation with correct-by-construction representations and bug injection, and on-premises domain models trained inside customer walled gardens for teams whose IP rules forbid API calls. Both are workarounds for a structural shortage.</p>
+          <p style="margin: 0; font-size: 14.5px; color: var(--color-neutral-300);"><span style="color: var(--color-accent-300);">Watch for:</span> federated or differentially private training arrangements between vendors and foundry customers. They are the only route to industrial-grade data without IP leakage.</p>
+        </div>
+      </article>
+      <article style="background: var(--color-surface); padding: 28px 30px; display: grid; grid-template-columns: 54px 1fr; gap: 24px;">
+        <span style="font-family: var(--font-heading); font-size: 30px; color: var(--color-accent-700);">05</span>
+        <div>
+          <h3 style="font-family: var(--font-heading); font-weight: var(--font-heading-weight); font-size: 22px; margin: 0 0 8px;">Economics, security, and an unresolved failure taxonomy</h3>
+          <p style="margin: 0 0 10px; max-width: 74ch;">Agentic runs are expensive in two currencies: tokens and EDA licences plus server-hours, since every speculative action can trigger a long tool run. The honest case for them is not unit cost but time-to-market — the survey's phrasing is that the value "lies not in being cheaper than an intern, but in being faster than a burnt-out engineer." Separately, autonomy widens the attack surface: research has demonstrated hardware Trojans embedded in generated RTL through subtle code-structure manipulation and via poisoned training data. And robustness still lacks a shared vocabulary for how agents fail — deadlooping without convergence, context loss that forgets a global constraint, tool hallucination.</p>
+          <p style="margin: 0; font-size: 14.5px; color: var(--color-neutral-300);"><span style="color: var(--color-accent-300);">Practical implication:</span> evaluate any agent on wall-clock time-to-result and stage-gated completion together with cost. Cost alone rewards runs that fail early and cheaply.</p>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <section id="outlook" style="padding: 56px 0 8px;">
+    <p style="font-family: var(--font-heading); font-size: 13px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--color-neutral-400); margin: 0 0 8px;font-family:var(--font-mono);">05 — Outlook</p>
+    <h2 style="font-family: var(--font-heading); font-weight: var(--font-heading-weight); font-size: 34px; line-height: 1.16; margin: 0 0 24px; max-width: 32ch;">What has to happen, and what would tell you it did</h2>
+    <div style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 44px; align-items: start;">
+      <div>
+        <h3 style="font-family: var(--font-heading); font-weight: var(--font-heading-weight); font-size: 17px; margin: 0 0 12px; color: var(--color-accent-200);">The published roadmap</h3>
+        <p style="margin: 0 0 14px; font-size: 15.5px;">The survey's pragmatic timeline: <strong style="font-weight: 500;">1–2 years</strong>, L3 agents as strong copilots for script generation under human oversight; <strong style="font-weight: 500;">3–5 years</strong>, autonomous block-level flows <em>conditional on</em> sim-to-real benchmarks closing; <strong style="font-weight: 500;">5+ years</strong>, full-chip agentic architecture exploration, which would require certified guarantees that do not exist yet.</p>
+        <p style="margin: 0; font-size: 15.5px;">The vendor timeline is faster on paper — early-access "full autonomy" in H2 2026 — but scoped to verification loops with engineers supervising, which is L3–L4 behaviour under an L5 label. Both timelines are compatible with the evidence; they describe different things.</p>
+        <p style="margin: 14px 0 0; font-size: 15.5px; color: var(--color-neutral-300);">The most credible near-term prize is not replacing design teams. It is what the Design Conductor authors describe: small teams exploring many more architectures end to end, because implementing a variant to GDSII stops being a multi-month commitment. If leading-edge programs really cost upward of $400M and 18–36 months, compressing exploration is worth a lot before autonomy is worth anything.</p>
+      </div>
+      <div>
+        <h3 style="font-family: var(--font-heading); font-weight: var(--font-heading-weight); font-size: 17px; margin: 0 0 12px; color: var(--color-accent-200);">Five falsifiable signals to track</h3>
+        <ol style="margin: 0; padding-left: 22px; display: flex; flex-direction: column; gap: 11px; font-size: 15.5px;">
+          <li>A tape-out on a real foundry node where the agent's work passed signoff without human RTL edits — with the flow and the diff published.</li>
+          <li>Any vendor productivity claim restated with a named customer, a stated baseline and an audited methodology.</li>
+          <li>Agent scores on hierarchical, cross-module benchmarks (ChipBench-class) moving from ~30% toward the 90s.</li>
+          <li>A structured tool-interface standard adopted by more than one EDA vendor.</li>
+          <li>Analog and mixed-signal results holding up: continuous parameter tuning under physical constraints is the domain where agent-guided optimisation has beaten human experts in narrow cases and where autonomy claims are newest.</li>
+        </ol>
+      </div>
+    </div>
+  </section>
+
+  <section id="verdict" style="padding: 56px 0 8px;">
+    <div style="background: var(--color-section); border-radius: var(--radius-lg); padding: 44px 48px; box-shadow: var(--shadow-md);">
+      <p style="font-family: var(--font-heading); font-size: 13px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--color-accent-200); margin: 0 0 14px;font-family:var(--font-mono);">Verdict</p>
+      <p style="font-family: var(--font-heading); font-weight: var(--font-heading-weight); font-size: 30px; line-height: 1.28; margin: 0 0 18px; max-width: 46ch;">Full-cycle agentic chip design is real at toy-to-small scale, reliable only inside purpose-built execution harnesses, and unproven anywhere near production silicon.</p>
+      <p style="margin: 0; max-width: 74ch; color: var(--color-neutral-200);">The 2026 evidence supports a specific, narrow claim: an agent can carry a small core from a written spec to a layout database, autonomously, in hours, with quality a skilled human would recognise. It does not yet support the claim that agents can produce industrial silicon, and the people building these systems say so in their own papers. The bottleneck has visibly moved from model capability to engineering infrastructure — state, interfaces, verification, and benchmarks that measure the flow rather than the snippet. That is a more tractable problem than model intelligence, which is the genuinely encouraging part of this story.</p>
+    </div>
+  </section>
+
+  <section id="sources" style="padding: 56px 0 0; border-top: 1px solid var(--color-divider); margin-top: 56px;">
+    <h2 style="font-family: var(--font-heading); font-weight: var(--font-heading-weight); font-size: 22px; margin: 0 0 8px;">Sources</h2>
+    <p style="margin: 0 0 24px; font-size: 14px; color: var(--color-neutral-400); max-width: 70ch;">Primary sources are preferred throughout: the papers and press releases themselves rather than coverage of them. Where a figure originates with a company selling the product, this report says so. Dates are as published; the field is moving fast enough that anything here should be re-checked against later work.</p>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 26px 40px;">
+      <div>
+        <p style="font-family: var(--font-heading); font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--color-accent-300); margin: 0 0 12px;font-family:var(--font-mono);">Peer-reviewed &amp; preprint</p>
+        <ul style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 14px; font-size: 14.5px;">
+          <li>The Verkor Team (R. Krishna, S. Krishna, D. Chin), <a href="https://arxiv.org/abs/2603.08716">Design Conductor: An agent autonomously builds a 1.5 GHz Linux-capable RISC-V CPU</a>, arXiv:2603.08716, 6 Feb 2026. <span style="color: var(--color-neutral-400);">Spec-to-GDSII result, quantitative table, and the authors' own model limitations.</span></li>
+          <li>J. Deng, Z. Chen, X. Wei et al. (Zhejiang University / ChipFlux), <a href="https://arxiv.org/abs/2607.17528">Can AI Agents Really Complete RTL-to-GDS? Lessons from Benchmarking Tool-Interactive EDA Workflows</a>, arXiv:2607.17528v3, 23 Jul 2026. <span style="color: var(--color-neutral-400);">Stage completion, Token ROI, Tcl error analysis. Single design, single run per configuration — the authors flag this limit.</span></li>
+          <li>Z. Zang, Y. Song, A. Wang et al., <a href="https://arxiv.org/abs/2512.23189">The Dawn of Agentic EDA: A Survey of Autonomous Digital Chip Design</a>, arXiv:2512.23189v2, 7 Feb 2026. <span style="color: var(--color-neutral-400);">Autonomy ladder, cognitive stack, sim-to-silicon gap, security taxonomy, roadmap.</span></li>
+          <li>Z. Yu et al., <a href="https://arxiv.org/abs/2601.21448">ChipBench: A Next-Step Benchmark for Evaluating LLM Performance in AI-Aided Chip Design</a>, arXiv:2601.21448, Jan–Feb 2026. <span style="color: var(--color-neutral-400);">The 30.74% / 13.33% figures and the benchmark-saturation argument.</span></li>
+          <li>Q. Xu, L. Stok, R. Drechsler, X. Wang, G. Li Zhang, I. L. Markov, <a href="https://arxiv.org/abs/2509.04905">Revolution or Hype? Seeking the Limits of Large Models in Hardware Design</a>, arXiv:2509.04905 / ICCAD 2025 panel paper. <span style="color: var(--color-neutral-400);">The skeptical case, from IBM, Synopsys and academia.</span></li>
+          <li><a href="https://arxiv.org/html/2607.13079v2">ChipVerilog: A Large-Scale OpenCores-Derived Benchmark for LLM-Based Verilog RTL Generation</a>, arXiv:2607.13079v2, Jul 2026. <span style="color: var(--color-neutral-400);">Corroborates the hierarchical-design difficulty.</span></li>
+        </ul>
+      </div>
+      <div>
+        <p style="font-family: var(--font-heading); font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--color-accent-300); margin: 0 0 12px;font-family:var(--font-mono);">Industry announcements &amp; coverage</p>
+        <ul style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 14px; font-size: 14.5px;">
+          <li><a href="https://news.synopsys.com/2026-07-26-Synopsys-Showcases-Comprehensive-Autonomous-Engineering-Workflows-from-Silicon-to-Systems,-Developed-with-NVIDIA-Technology">Synopsys, autonomous engineering workflows with NVIDIA</a>, press release, 26 Jul 2026; and <a href="https://investor.synopsys.com/news/news-details/2026/Synopsys-Outlines-Vision-for-Engineering-the-Future/default.aspx">Synopsys Outlines Vision for Engineering the Future</a>, Mar 2026 (L4 workflow, AgentEngineer).</li>
+          <li><a href="https://futurumgroup.com/insights/synopsys-cadence-and-siemens-take-agentic-chip-design-autonomous-at-dac/">Futurum Group, “Synopsys, Cadence, and Siemens Take Agentic Chip Design Autonomous at DAC”</a>, Aug 2026. <span style="color: var(--color-neutral-400);">Analyst view, including what remains unaudited.</span></li>
+          <li><a href="https://www.engineering.com/cadence-extends-chip-design-agent-to-level-5-autonomy/">Engineering.com on Cadence's Level-5 ChipStack</a> and <a href="https://www.embedded.com/what-level-5-autonomy-could-mean-for-chip-design-engineers">Embedded.com's interview with Cadence</a>, Jun 2026; Cadence's <a href="https://www.cadence.com/en_US/home/ai/ai-for-design.html">five-level framing</a>.</li>
+          <li><a href="https://chipagents.ai/blogs/chipagents-dac-2026">ChipAgents at DAC 2026</a> and <a href="https://semiengineering.com/introducing-an-agentic-llm-for-chip-design/">“Introducing an Agentic LLM for Chip Design”</a> (Semiconductor Engineering / ChipAgents on the Renoir model).</li>
+          <li><a href="https://www.eetasia.com/synopsys-nvidia-advance-autonomous-ai-agents-for-chip-design-and-engineering/">EE Times Asia, Synopsys–NVIDIA agentic AI</a>, Jul 2026.</li>
+        </ul>
+      </div>
+    </div>
+    <p style="margin: 32px 0 0; font-size: 13px; color: var(--color-neutral-500); max-width: 78ch;">Distinguishing evidence from inference: the benchmark numbers, dates, and quoted limitations are established by the sources above. The framing of "five obstacles", the falsifiable-signals list, and the verdict are this report's own synthesis. Where sources disagree — notably vendor autonomy levels versus the academic ladder — the disagreement is stated rather than reconciled.</p>
+  </section>
+
+</main>
+  <footer class="colophon">
+    <span>Research report · compiled 4 September 2026</span>
+    <span class="sep">·</span>
+    <span>Sources dated to July 2026</span>
+    <span class="sep">·</span>
+    <span>Primary sources cited in full above</span>
+  </footer>
+  </div>
+</div>
+
+<script>
+(function () {
+  var bar = document.getElementById('read-progress');
+  var doc = document.documentElement;
+  var ticking = false;
+  function paint() {
+    ticking = false;
+    var max = doc.scrollHeight - window.innerHeight;
+    var pct = max > 0 ? Math.min(1, Math.max(0, window.scrollY / max)) : 0;
+    bar.style.width = (pct * 100).toFixed(2) + '%';
+  }
+  window.addEventListener('scroll', function () {
+    if (!ticking) { ticking = true; requestAnimationFrame(paint); }
+  }, { passive: true });
+  paint();
+
+  var links = Array.prototype.slice.call(document.querySelectorAll('.toc a'));
+  var targets = links.map(function (a) { return document.querySelector(a.getAttribute('href')); });
+  function spy() {
+    var best = 0;
+    for (var i = 0; i < targets.length; i++) {
+      var t = targets[i];
+      if (t && t.getBoundingClientRect().top <= 120) best = i;
+    }
+    links.forEach(function (a, i) {
+      if (i === best) { a.setAttribute('aria-current', 'true'); }
+      else { a.removeAttribute('aria-current'); }
+    });
+  }
+  window.addEventListener('scroll', spy, { passive: true });
+  spy();
+})();
+</script>
+</body>
+</html>
